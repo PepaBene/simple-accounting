@@ -338,85 +338,93 @@ function formatCzechAmount(value: number): string {
 function generateReportData(
   workbookId: number,
   reportType: string
-): { headers: string[]; rows: string[][]; sectionRows?: Array<{ type: 'header' | 'subtotal' | 'total'; label: string; values?: string[] }> } {
+): { headers: string[]; rows: string[][] } {
   const standard = getWorkbookStandard(workbookId);
+  const f = formatCzechAmount;
 
+  // ── Obratová předvaha ─────────────────────────────────────────────
   if (reportType === 'trialBalance') {
     const tbRows = getTrialBalanceRows(workbookId);
     const headers = [
-      'Ucet',
-      'Nazev',
-      'Pocatecni stav MD',
-      'Pocatecni stav D',
-      'Obrat MD',
-      'Obrat D',
-      'Konecny stav MD',
-      'Konecny stav D',
+      'Ucet', 'Nazev',
+      'Pocatecni stav MD', 'Pocatecni stav D',
+      'Obrat MD', 'Obrat D',
+      'Konecny stav MD', 'Konecny stav D',
     ];
+
     const rows = tbRows.map((r) => [
-      r.code,
-      r.name,
-      formatCzechAmount(r.opening_debit),
-      formatCzechAmount(r.opening_credit),
-      formatCzechAmount(r.turnover_debit),
-      formatCzechAmount(r.turnover_credit),
-      formatCzechAmount(r.closing_debit),
-      formatCzechAmount(r.closing_credit),
+      r.code, r.name,
+      f(r.opening_debit), f(r.opening_credit),
+      f(r.turnover_debit), f(r.turnover_credit),
+      f(r.closing_debit), f(r.closing_credit),
     ]);
+
+    // Totals row
+    const tot = tbRows.reduce((a, r) => ({
+      od: a.od + r.opening_debit, oc: a.oc + r.opening_credit,
+      td: a.td + r.turnover_debit, tc: a.tc + r.turnover_credit,
+      cd: a.cd + r.closing_debit, cc: a.cc + r.closing_credit,
+    }), { od: 0, oc: 0, td: 0, tc: 0, cd: 0, cc: 0 });
+    rows.push(['', 'CELKEM', f(tot.od), f(tot.oc), f(tot.td), f(tot.tc), f(tot.cd), f(tot.cc)]);
+
     return { headers, rows };
   }
 
+  // ── Rozvaha ───────────────────────────────────────────────────────
   if (reportType === 'balanceSheet') {
     const balances = getAccountBalances(workbookId);
-    const headers = ['Ucet', 'Nazev', 'Castka'];
+    const headers = ['Oznaceni', 'Text', 'Castka'];
     const rows: string[][] = [];
 
-    // Long-term assets
-    rows.push(['', '--- STALA AKTIVA ---', '']);
+    // AKTIVA
+    rows.push(['', 'AKTIVA', '']);
+
+    // A. Stálá aktiva
     const ltAssets = balances.filter(b => b.account_type === 'asset' && isLongTermAsset(b.code, standard));
-    for (const b of ltAssets) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const ltAssetsTotal = ltAssets.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Stala aktiva celkem', formatCzechAmount(ltAssetsTotal)]);
+    rows.push(['A.', 'Stala aktiva', f(ltAssetsTotal)]);
+    for (const b of ltAssets) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
 
-    // Current assets
-    rows.push(['', '--- OBEZNA AKTIVA ---', '']);
+    // B. Oběžná aktiva
     const curAssets = balances.filter(b => b.account_type === 'asset' && !isLongTermAsset(b.code, standard));
-    for (const b of curAssets) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const curAssetsTotal = curAssets.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Obezna aktiva celkem', formatCzechAmount(curAssetsTotal)]);
+    rows.push(['B.', 'Obezna aktiva', f(curAssetsTotal)]);
+    for (const b of curAssets) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
 
-    rows.push(['', 'AKTIVA CELKEM', formatCzechAmount(ltAssetsTotal + curAssetsTotal)]);
+    const totalAssets = ltAssetsTotal + curAssetsTotal;
+    rows.push(['', 'AKTIVA CELKEM', f(totalAssets)]);
     rows.push(['', '', '']);
 
-    // Equity
-    rows.push(['', '--- VLASTNI KAPITAL ---', '']);
+    // PASIVA
+    rows.push(['', 'PASIVA', '']);
+
+    // A. Vlastní kapitál
     const equityAccs = balances.filter(b => b.account_type === 'equity');
-    for (const b of equityAccs) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const equityTotal = equityAccs.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Vlastni kapital celkem', formatCzechAmount(equityTotal)]);
+    rows.push(['A.', 'Vlastni kapital', f(equityTotal)]);
+    for (const b of equityAccs) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
 
-    // Long-term liabilities
-    rows.push(['', '--- DLOUHODOBE ZAVAZKY ---', '']);
+    // B. Cizí zdroje
     const ltLiab = balances.filter(b => b.account_type === 'liability' && isLongTermLiability(b.code, standard));
-    for (const b of ltLiab) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
-    const ltLiabTotal = ltLiab.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Dlouhodobe zavazky celkem', formatCzechAmount(ltLiabTotal)]);
-
-    // Current liabilities
-    rows.push(['', '--- KRATKODOBE ZAVAZKY ---', '']);
     const curLiab = balances.filter(b => b.account_type === 'liability' && !isLongTermLiability(b.code, standard));
-    for (const b of curLiab) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
+    const ltLiabTotal = ltLiab.reduce((s, b) => s + b.closing_balance, 0);
     const curLiabTotal = curLiab.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Kratkodobe zavazky celkem', formatCzechAmount(curLiabTotal)]);
 
-    rows.push(['', 'PASIVA CELKEM', formatCzechAmount(equityTotal + ltLiabTotal + curLiabTotal)]);
+    rows.push(['B.', 'Cizi zdroje', f(ltLiabTotal + curLiabTotal)]);
+    rows.push(['B.I.', '  Dlouhodobe zavazky', f(ltLiabTotal)]);
+    for (const b of ltLiab) rows.push([b.code, '    ' + b.name, f(b.closing_balance)]);
+    rows.push(['B.II.', '  Kratkodobe zavazky', f(curLiabTotal)]);
+    for (const b of curLiab) rows.push([b.code, '    ' + b.name, f(b.closing_balance)]);
+
+    rows.push(['', 'PASIVA CELKEM', f(equityTotal + ltLiabTotal + curLiabTotal)]);
 
     return { headers, rows };
   }
 
+  // ── Výkaz zisku a ztráty ──────────────────────────────────────────
   if (reportType === 'incomeStatement') {
     const balances = getAccountBalances(workbookId);
-    const headers = ['Ucet', 'Nazev', 'Castka'];
+    const headers = ['Oznaceni', 'Text', 'Castka'];
     const rows: string[][] = [];
 
     const opRev = balances.filter(b => b.account_type === 'revenue' && !isFinancialRevenue(b.code, standard));
@@ -424,62 +432,156 @@ function generateReportData(
     const finRev = balances.filter(b => b.account_type === 'revenue' && isFinancialRevenue(b.code, standard));
     const finExp = balances.filter(b => b.account_type === 'expense' && isFinancialExpense(b.code, standard));
 
-    rows.push(['', '--- PROVOZNI VYNOSY ---', '']);
-    for (const b of opRev) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const opRevTotal = opRev.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Provozni vynosy celkem', formatCzechAmount(opRevTotal)]);
-
-    rows.push(['', '--- PROVOZNI NAKLADY ---', '']);
-    for (const b of opExp) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const opExpTotal = opExp.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Provozni naklady celkem', formatCzechAmount(opExpTotal)]);
-
-    const opIncome = opRevTotal - opExpTotal;
-    rows.push(['', 'PROVOZNI VYSLEDEK HOSPODARENI', formatCzechAmount(opIncome)]);
-    rows.push(['', '', '']);
-
-    rows.push(['', '--- FINANCNI VYNOSY ---', '']);
-    for (const b of finRev) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const finRevTotal = finRev.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Financni vynosy celkem', formatCzechAmount(finRevTotal)]);
-
-    rows.push(['', '--- FINANCNI NAKLADY ---', '']);
-    for (const b of finExp) rows.push([b.code, b.name, formatCzechAmount(b.closing_balance)]);
     const finExpTotal = finExp.reduce((s, b) => s + b.closing_balance, 0);
-    rows.push(['', 'Financni naklady celkem', formatCzechAmount(finExpTotal)]);
-
+    const opIncome = opRevTotal - opExpTotal;
     const finIncome = finRevTotal - finExpTotal;
-    rows.push(['', 'FINANCNI VYSLEDEK HOSPODARENI', formatCzechAmount(finIncome)]);
+
+    // I. Provozní výnosy
+    rows.push(['I.', 'Provozni vynosy', f(opRevTotal)]);
+    for (const b of opRev) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
+
+    // II. Provozní náklady
+    rows.push(['II.', 'Provozni naklady', f(opExpTotal)]);
+    for (const b of opExp) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
+
+    rows.push(['*', 'Provozni vysledek hospodareni', f(opIncome)]);
     rows.push(['', '', '']);
 
-    rows.push(['', 'VYSLEDEK HOSPODARENI ZA UCETNI OBDOBI', formatCzechAmount(opIncome + finIncome)]);
+    // III. Finanční výnosy
+    rows.push(['III.', 'Financni vynosy', f(finRevTotal)]);
+    for (const b of finRev) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
+
+    // IV. Finanční náklady
+    rows.push(['IV.', 'Financni naklady', f(finExpTotal)]);
+    for (const b of finExp) rows.push([b.code, '  ' + b.name, f(b.closing_balance)]);
+
+    rows.push(['*', 'Financni vysledek hospodareni', f(finIncome)]);
+    rows.push(['', '', '']);
+
+    rows.push(['***', 'Vysledek hospodareni za ucetni obdobi', f(opIncome + finIncome)]);
 
     return { headers, rows };
   }
 
-  // Default: trial balance
-  const tbRows = getTrialBalanceRows(workbookId);
-  const headers = [
-    'Ucet',
-    'Nazev',
-    'Pocatecni stav MD',
-    'Pocatecni stav D',
-    'Obrat MD',
-    'Obrat D',
-    'Konecny stav MD',
-    'Konecny stav D',
-  ];
-  const rows = tbRows.map((r) => [
-    r.code,
-    r.name,
-    formatCzechAmount(r.opening_debit),
-    formatCzechAmount(r.opening_credit),
-    formatCzechAmount(r.turnover_debit),
-    formatCzechAmount(r.turnover_credit),
-    formatCzechAmount(r.closing_debit),
-    formatCzechAmount(r.closing_credit),
-  ]);
-  return { headers, rows };
+  // ── Přehled o peněžních tocích ────────────────────────────────────
+  if (reportType === 'cashFlowStatement') {
+    const db = getDb();
+    const headers = ['Oznaceni', 'Text', 'Castka'];
+    const rows: string[][] = [];
+
+    const lines = db
+      .prepare(
+        `SELECT
+          je.description AS entry_description,
+          jel.debit_amount,
+          jel.credit_amount,
+          a.account_type
+        FROM journal_entry_lines jel
+        JOIN journal_entries je ON je.id = jel.journal_entry_id
+        JOIN accounts a ON a.id = jel.account_id
+        WHERE je.workbook_id = ?
+        ORDER BY je.entry_date`
+      )
+      .all(workbookId) as Array<{
+        entry_description: string | null;
+        debit_amount: number;
+        credit_amount: number;
+        account_type: string;
+      }>;
+
+    const opMap = new Map<string, number>();
+    const invMap = new Map<string, number>();
+    const finMap = new Map<string, number>();
+
+    for (const line of lines) {
+      const desc = line.entry_description || 'Nespecifikovano';
+      const net = line.debit_amount - line.credit_amount;
+      if (line.account_type === 'revenue' || line.account_type === 'expense') {
+        opMap.set(desc, (opMap.get(desc) || 0) + net);
+      } else if (line.account_type === 'asset') {
+        invMap.set(desc, (invMap.get(desc) || 0) + net);
+      } else {
+        finMap.set(desc, (finMap.get(desc) || 0) + net);
+      }
+    }
+
+    let totalOp = 0, totalInv = 0, totalFin = 0;
+
+    rows.push(['A.', 'Penezni toky z provozni cinnosti', '']);
+    for (const [desc, amt] of opMap) {
+      rows.push(['', '  ' + desc, f(amt)]);
+      totalOp += amt;
+    }
+    rows.push(['A.*', 'Ciste penezni toky z provozni cinnosti', f(totalOp)]);
+    rows.push(['', '', '']);
+
+    rows.push(['B.', 'Penezni toky z investicni cinnosti', '']);
+    for (const [desc, amt] of invMap) {
+      rows.push(['', '  ' + desc, f(amt)]);
+      totalInv += amt;
+    }
+    rows.push(['B.*', 'Ciste penezni toky z investicni cinnosti', f(totalInv)]);
+    rows.push(['', '', '']);
+
+    rows.push(['C.', 'Penezni toky z financni cinnosti', '']);
+    for (const [desc, amt] of finMap) {
+      rows.push(['', '  ' + desc, f(amt)]);
+      totalFin += amt;
+    }
+    rows.push(['C.*', 'Ciste penezni toky z financni cinnosti', f(totalFin)]);
+    rows.push(['', '', '']);
+
+    rows.push(['D.', 'Cista zmena peneznich prostredku', f(totalOp + totalInv + totalFin)]);
+
+    return { headers, rows };
+  }
+
+  // ── Přehled o změnách vlastního kapitálu ──────────────────────────
+  if (reportType === 'equityStatement') {
+    const db = getDb();
+    const headers = ['Ucet', 'Nazev', 'Pocatecni stav', 'Zvyseni', 'Snizeni', 'Konecny stav'];
+    const rows: string[][] = [];
+
+    const equityAccounts = db
+      .prepare("SELECT * FROM accounts WHERE workbook_id = ? AND account_type = 'equity' ORDER BY code")
+      .all(workbookId) as AccountRow[];
+
+    let totOpen = 0, totInc = 0, totDec = 0, totClose = 0;
+
+    for (const account of equityAccounts) {
+      const totals = db
+        .prepare(
+          `SELECT
+            COALESCE(SUM(jel.debit_amount), 0) AS total_debits,
+            COALESCE(SUM(jel.credit_amount), 0) AS total_credits
+          FROM journal_entry_lines jel
+          JOIN journal_entries je ON je.id = jel.journal_entry_id
+          WHERE je.workbook_id = ? AND jel.account_id = ?`
+        )
+        .get(workbookId, account.id) as { total_debits: number; total_credits: number };
+
+      const openBal = 0;
+      const inc = totals.total_credits;
+      const dec = totals.total_debits;
+      const closeBal = openBal + inc - dec;
+
+      rows.push([account.code, account.name, f(openBal), f(inc), f(dec), f(closeBal)]);
+      totOpen += openBal;
+      totInc += inc;
+      totDec += dec;
+      totClose += closeBal;
+    }
+
+    rows.push(['', 'CELKEM', f(totOpen), f(totInc), f(totDec), f(totClose)]);
+
+    return { headers, rows };
+  }
+
+  // Fallback: trial balance
+  return generateReportData(workbookId, 'trialBalance');
 }
 
 // --- Register handlers ---
@@ -1034,66 +1136,79 @@ export function registerReportHandlers(): void {
 
         // Title
         const title = titleLabels[reportType] || 'Vykaz';
-        doc.setFontSize(16);
-        doc.text(title, 14, 20);
-        doc.setFontSize(10);
+        doc.setFontSize(14);
+        doc.text(title, 14, 18);
+        doc.setFontSize(9);
         const now = new Date();
         const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
-        doc.text(`Ke dni: ${dateStr}`, 14, 28);
+        doc.text(`Ke dni: ${dateStr}`, 14, 25);
 
-        // Table
-        const startY = 35;
-        const lineHeight = 8;
+        // Compute column widths based on content
         const pageWidth = doc.internal.pageSize.getWidth();
-        const colWidth = (pageWidth - 28) / headers.length;
+        const margin = 14;
+        const tableWidth = pageWidth - margin * 2;
+        const colCount = headers.length;
+
+        // Simple column width: first column narrow, distribute rest
+        const colWidths: number[] = [];
+        if (colCount <= 3) {
+          // Oznaceni, Text, Castka — or Ucet, Nazev, ...
+          colWidths.push(tableWidth * 0.12); // label col
+          colWidths.push(tableWidth * 0.58); // text col
+          colWidths.push(tableWidth * 0.30); // amount col
+        } else {
+          // Trial balance / equity: even distribution with first two cols wider
+          const narrowWidth = tableWidth / (colCount + 1);
+          colWidths.push(narrowWidth * 0.8);  // code
+          colWidths.push(narrowWidth * 1.8);  // name
+          for (let i = 2; i < colCount; i++) colWidths.push(narrowWidth * ((colCount - 0.6) / (colCount - 2)));
+        }
+
+        const startY = 30;
+        const lineHeight = 6;
+        doc.setFontSize(7);
+
+        // Helper to draw one row
+        function drawRow(y: number, cells: string[], bold: boolean): void {
+          doc.setFont('helvetica', bold ? 'bold' : 'normal');
+          let x = margin;
+          for (let i = 0; i < cells.length; i++) {
+            const w = colWidths[i] || colWidths[colWidths.length - 1];
+            // Right-align numeric columns (index >= 2)
+            if (i >= 2) {
+              const textWidth = doc.getTextWidth(String(cells[i]));
+              doc.text(String(cells[i]), x + w - textWidth - 1, y);
+            } else {
+              doc.text(String(cells[i]), x + 1, y);
+            }
+            x += w;
+          }
+        }
 
         // Header row
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        headers.forEach((header, i) => {
-          doc.text(header, 14 + i * colWidth, startY);
-        });
-
-        doc.setLineWidth(0.5);
-        doc.line(14, startY + 2, pageWidth - 14, startY + 2);
+        drawRow(startY, headers, true);
+        doc.setLineWidth(0.3);
+        doc.line(margin, startY + 1.5, pageWidth - margin, startY + 1.5);
 
         // Data rows
-        doc.setFont('helvetica', 'normal');
         let currentY = startY + lineHeight;
 
         for (const row of rows) {
-          if (currentY > doc.internal.pageSize.getHeight() - 20) {
+          if (currentY > doc.internal.pageSize.getHeight() - 15) {
             doc.addPage();
-            currentY = 20;
-
-            doc.setFont('helvetica', 'bold');
-            headers.forEach((header, i) => {
-              doc.text(header, 14 + i * colWidth, currentY);
-            });
-            doc.line(14, currentY + 2, pageWidth - 14, currentY + 2);
-            doc.setFont('helvetica', 'normal');
+            currentY = 15;
+            drawRow(currentY, headers, true);
+            doc.line(margin, currentY + 1.5, pageWidth - margin, currentY + 1.5);
             currentY += lineHeight;
           }
 
-          // Bold section headers and totals
-          const isSection = row[0] === '' && row[1].startsWith('---');
-          const isTotal = row[0] === '' && (row[1].includes('celkem') || row[1].includes('CELKEM') || row[1].includes('VYSLEDEK') || row[1].includes('AKTIVA') || row[1].includes('PASIVA'));
-
-          if (isSection) {
-            doc.setFont('helvetica', 'bold');
-            doc.text(row[1].replace(/---/g, '').trim(), 14, currentY);
-            doc.setFont('helvetica', 'normal');
-          } else if (isTotal) {
-            doc.setFont('helvetica', 'bold');
-            row.forEach((cell, i) => {
-              doc.text(String(cell), 14 + i * colWidth, currentY);
-            });
-            doc.setFont('helvetica', 'normal');
-          } else {
-            row.forEach((cell, i) => {
-              doc.text(String(cell), 14 + i * colWidth, currentY);
-            });
+          // Skip fully empty rows
+          if (row.every(cell => cell === '')) {
+            currentY += lineHeight * 0.5;
+            continue;
           }
+
+          drawRow(currentY, row, false);
           currentY += lineHeight;
         }
 
