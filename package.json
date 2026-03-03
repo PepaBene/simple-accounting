@@ -3,7 +3,7 @@
   "productName": "Účetnictví",
   "version": "1.0.0",
   "description": "Czech accounting learning desktop app",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/index.js",
   "private": true,
   "scripts": {
     "start": "electron-forge start",
