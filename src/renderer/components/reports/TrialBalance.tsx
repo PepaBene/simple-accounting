@@ -183,7 +183,7 @@ export default function TrialBalance() {
                   className="px-3 py-1.5 text-center text-xs font-semibold uppercase tracking-wider text-gray-600 border-b border-gray-200"
                   colSpan={2}
                 >
-                  Kone\u010dn\u00fd stav
+                  Kone\u010dn\u00fd z\u016fstatek
                 </th>
               </tr>
               <tr className="bg-gray-100 border-b-2 border-gray-300">
