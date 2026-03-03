@@ -3,6 +3,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
@@ -10,16 +11,37 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    name: 'Simple Accounting',
+    name: 'Ucetnictvi',
+    executableName: 'ucetnictvi',
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
-    new MakerZIP({}, ['darwin']),
-    new MakerDeb({}),
-    new MakerRpm({}),
+    new MakerSquirrel({
+      name: 'Ucetnictvi',
+    }),
+    new MakerZIP({}, ['darwin', 'linux']),
+    new MakerDeb({
+      options: {
+        name: 'ucetnictvi',
+        productName: 'Účetnictví',
+        genericName: 'Accounting',
+        description: 'Jednoduchá aplikace pro výuku podvojného účetnictví',
+        categories: ['Office', 'Finance'],
+        section: 'utils',
+        maintainer: 'Student',
+      },
+    }),
+    new MakerRpm({
+      options: {
+        name: 'ucetnictvi',
+        productName: 'Účetnictví',
+        description: 'Jednoduchá aplikace pro výuku podvojného účetnictví',
+        categories: ['Office', 'Finance'],
+      },
+    }),
   ],
   plugins: [
+    new AutoUnpackNativesPlugin({}),
     new VitePlugin({
       build: [
         {
