@@ -434,7 +434,7 @@ export default function JournalEntryForm() {
         <h2 className="text-sm font-semibold text-gray-700 mb-2">Řádky zápisu</h2>
       </div>
 
-      <div className="overflow-x-auto border border-gray-300 rounded mb-4">
+      <div className="overflow-visible border border-gray-300 rounded mb-4">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-100 border-b-2 border-gray-300">
