@@ -5,6 +5,7 @@ import { registerWorkbookHandlers } from './ipc/workbooks';
 import { registerAccountHandlers } from './ipc/accounts';
 import { registerJournalHandlers } from './ipc/journal';
 import { registerReportHandlers } from './ipc/reports';
+import { registerSeedHandlers } from './ipc/seed';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -49,6 +50,7 @@ app.whenReady().then(() => {
   registerAccountHandlers();
   registerJournalHandlers();
   registerReportHandlers();
+  registerSeedHandlers();
 
   createWindow();
 

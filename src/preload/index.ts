@@ -70,6 +70,12 @@ const api = {
     delete: (id: number) => ipcRenderer.invoke('journal:delete', id),
   },
 
+  // Seed / testing
+  seed: {
+    mockEntries: (workbookId: number) =>
+      ipcRenderer.invoke('seed:mockEntries', workbookId),
+  },
+
   // Reports
   reports: {
     trialBalance: (workbookId: number) =>

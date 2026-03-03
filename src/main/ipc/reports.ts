@@ -17,62 +17,6 @@ interface AccountBalance {
   closing_balance: number;
 }
 
-interface AccountSummary {
-  account_id: number;
-  code: string;
-  name: string;
-  balance: number;
-}
-
-interface BalanceSheetResult {
-  assets: AccountSummary[];
-  liabilities: AccountSummary[];
-  equity: AccountSummary[];
-  totalAssets: number;
-  totalLiabilitiesAndEquity: number;
-}
-
-interface IncomeStatementResult {
-  revenue: AccountSummary[];
-  expenses: AccountSummary[];
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
-}
-
-interface CashFlowCategory {
-  description: string;
-  amount: number;
-}
-
-interface CashFlowStatementResult {
-  operating: CashFlowCategory[];
-  investing: CashFlowCategory[];
-  financing: CashFlowCategory[];
-  totalOperating: number;
-  totalInvesting: number;
-  totalFinancing: number;
-  netCashChange: number;
-}
-
-interface EquityChange {
-  account_id: number;
-  code: string;
-  name: string;
-  opening_balance: number;
-  contributions: number;
-  withdrawals: number;
-  net_income_effect: number;
-  closing_balance: number;
-}
-
-interface EquityStatementResult {
-  accounts: EquityChange[];
-  totalOpeningEquity: number;
-  totalClosingEquity: number;
-  totalChange: number;
-}
-
 interface AccountRow {
   id: number;
   workbook_id: number;
@@ -246,7 +190,42 @@ export function registerReportHandlers(): void {
   ipcMain.handle('reports:trialBalance', (_event, workbookId: number) => {
     try {
       const balances = getAccountBalances(workbookId);
-      return { success: true, data: balances };
+
+      // Transform to debit/credit column format expected by the frontend
+      const rows = balances.map((b) => {
+        const isDebitNormal = b.account_type === 'asset' || b.account_type === 'expense';
+        let closing_debit = 0;
+        let closing_credit = 0;
+
+        if (isDebitNormal) {
+          if (b.closing_balance >= 0) {
+            closing_debit = b.closing_balance;
+          } else {
+            closing_credit = Math.abs(b.closing_balance);
+          }
+        } else {
+          if (b.closing_balance >= 0) {
+            closing_credit = b.closing_balance;
+          } else {
+            closing_debit = Math.abs(b.closing_balance);
+          }
+        }
+
+        return {
+          account_id: b.account_id,
+          code: b.code,
+          name: b.name,
+          account_type: b.account_type,
+          opening_debit: 0,
+          opening_credit: 0,
+          turnover_debit: b.total_debits,
+          turnover_credit: b.total_credits,
+          closing_debit,
+          closing_credit,
+        };
+      });
+
+      return { success: true, data: rows };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
@@ -257,41 +236,31 @@ export function registerReportHandlers(): void {
     try {
       const balances = getAccountBalances(workbookId);
 
-      const assets: AccountSummary[] = [];
-      const liabilities: AccountSummary[] = [];
-      const equity: AccountSummary[] = [];
+      const assets: { code: string; name: string; amount: number }[] = [];
+      const liabilities: { code: string; name: string; amount: number }[] = [];
+      const equity: { code: string; name: string; amount: number }[] = [];
 
       for (const b of balances) {
-        const summary: AccountSummary = {
-          account_id: b.account_id,
-          code: b.code,
-          name: b.name,
-          balance: b.closing_balance,
-        };
+        const item = { code: b.code, name: b.name, amount: b.closing_balance };
 
         if (b.account_type === 'asset') {
-          assets.push(summary);
+          assets.push(item);
         } else if (b.account_type === 'liability') {
-          liabilities.push(summary);
+          liabilities.push(item);
         } else if (b.account_type === 'equity') {
-          equity.push(summary);
+          equity.push(item);
         }
       }
 
-      const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
+      const totalAssets = assets.reduce((sum, a) => sum + a.amount, 0);
       const totalLiabilitiesAndEquity =
-        liabilities.reduce((sum, a) => sum + a.balance, 0) +
-        equity.reduce((sum, a) => sum + a.balance, 0);
+        liabilities.reduce((sum, a) => sum + a.amount, 0) +
+        equity.reduce((sum, a) => sum + a.amount, 0);
 
-      const result: BalanceSheetResult = {
-        assets,
-        liabilities,
-        equity,
-        totalAssets,
-        totalLiabilitiesAndEquity,
+      return {
+        success: true,
+        data: { assets, liabilities, equity, totalAssets, totalLiabilitiesAndEquity },
       };
-
-      return { success: true, data: result };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
@@ -302,37 +271,27 @@ export function registerReportHandlers(): void {
     try {
       const balances = getAccountBalances(workbookId);
 
-      const revenue: AccountSummary[] = [];
-      const expenses: AccountSummary[] = [];
+      const revenue: { code: string; name: string; amount: number }[] = [];
+      const expenses: { code: string; name: string; amount: number }[] = [];
 
       for (const b of balances) {
-        const summary: AccountSummary = {
-          account_id: b.account_id,
-          code: b.code,
-          name: b.name,
-          balance: b.closing_balance,
-        };
+        const item = { code: b.code, name: b.name, amount: b.closing_balance };
 
         if (b.account_type === 'revenue') {
-          revenue.push(summary);
+          revenue.push(item);
         } else if (b.account_type === 'expense') {
-          expenses.push(summary);
+          expenses.push(item);
         }
       }
 
-      const totalRevenue = revenue.reduce((sum, a) => sum + a.balance, 0);
-      const totalExpenses = expenses.reduce((sum, a) => sum + a.balance, 0);
+      const totalRevenue = revenue.reduce((sum, a) => sum + a.amount, 0);
+      const totalExpenses = expenses.reduce((sum, a) => sum + a.amount, 0);
       const netIncome = totalRevenue - totalExpenses;
 
-      const result: IncomeStatementResult = {
-        revenue,
-        expenses,
-        totalRevenue,
-        totalExpenses,
-        netIncome,
+      return {
+        success: true,
+        data: { revenue, expenses, totalRevenue, totalExpenses, netIncome },
       };
-
-      return { success: true, data: result };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
@@ -365,9 +324,9 @@ export function registerReportHandlers(): void {
       // Operating: revenue and expense account movements
       // Investing: asset account movements (non-cash assets)
       // Financing: liability and equity account movements
-      const operating: CashFlowCategory[] = [];
-      const investing: CashFlowCategory[] = [];
-      const financing: CashFlowCategory[] = [];
+      const operating: { description: string; amount: number }[] = [];
+      const investing: { description: string; amount: number }[] = [];
+      const financing: { description: string; amount: number }[] = [];
 
       // Group by entry description for readability
       const operatingMap = new Map<string, number>();
@@ -400,19 +359,20 @@ export function registerReportHandlers(): void {
       const totalOperating = operating.reduce((sum, item) => sum + item.amount, 0);
       const totalInvesting = investing.reduce((sum, item) => sum + item.amount, 0);
       const totalFinancing = financing.reduce((sum, item) => sum + item.amount, 0);
-      const netCashChange = totalOperating + totalInvesting + totalFinancing;
+      const netChange = totalOperating + totalInvesting + totalFinancing;
 
-      const result: CashFlowStatementResult = {
-        operating,
-        investing,
-        financing,
-        totalOperating,
-        totalInvesting,
-        totalFinancing,
-        netCashChange,
+      return {
+        success: true,
+        data: {
+          operating,
+          investing,
+          financing,
+          totalOperating,
+          totalInvesting,
+          totalFinancing,
+          netChange,
+        },
       };
-
-      return { success: true, data: result };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }
@@ -429,7 +389,7 @@ export function registerReportHandlers(): void {
         )
         .all(workbookId) as AccountRow[];
 
-      const accounts: EquityChange[] = equityAccounts.map((account) => {
+      const items = equityAccounts.map((account) => {
         const totals = db
           .prepare(
             `SELECT
@@ -441,39 +401,28 @@ export function registerReportHandlers(): void {
           )
           .get(workbookId, account.id) as { total_debits: number; total_credits: number };
 
-        const openingBalance = 0; // Opening balance is 0 for now
-
-        // For equity accounts: credits increase, debits decrease
-        // Contributions are credits, withdrawals are debits
-        const contributions = totals.total_credits;
-        const withdrawals = totals.total_debits;
-        const netIncomeEffect = 0; // Simplified: net income effect computed separately if needed
-        const closingBalance = openingBalance + contributions - withdrawals;
+        const openingBalance = 0;
+        const increases = totals.total_credits;
+        const decreases = totals.total_debits;
+        const closingBalance = openingBalance + increases - decreases;
 
         return {
-          account_id: account.id,
           code: account.code,
           name: account.name,
-          opening_balance: openingBalance,
-          contributions,
-          withdrawals,
-          net_income_effect: netIncomeEffect,
-          closing_balance: closingBalance,
+          openingBalance,
+          increases,
+          decreases,
+          closingBalance,
         };
       });
 
-      const totalOpeningEquity = accounts.reduce((sum, a) => sum + a.opening_balance, 0);
-      const totalClosingEquity = accounts.reduce((sum, a) => sum + a.closing_balance, 0);
-      const totalChange = totalClosingEquity - totalOpeningEquity;
+      const totalOpening = items.reduce((sum, a) => sum + a.openingBalance, 0);
+      const totalClosing = items.reduce((sum, a) => sum + a.closingBalance, 0);
 
-      const result: EquityStatementResult = {
-        accounts,
-        totalOpeningEquity,
-        totalClosingEquity,
-        totalChange,
+      return {
+        success: true,
+        data: { items, totalOpening, totalClosing },
       };
-
-      return { success: true, data: result };
     } catch (error) {
       return { success: false, error: (error as Error).message };
     }

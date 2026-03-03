@@ -51,6 +51,7 @@ export default function JournalEntryList() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<JournalEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   // ---------- data loading ----------
 
@@ -115,6 +116,26 @@ export default function JournalEntryList() {
     }
   }
 
+  // ---------- seed mock data ----------
+
+  async function handleSeedMockData() {
+    if (!activeWorkbook) return;
+    setSeeding(true);
+    setError(null);
+    try {
+      const result = await window.api.seed.mockEntries(activeWorkbook.id);
+      if (result.success) {
+        await loadEntries();
+      } else {
+        setError(result.error ?? 'Nepodařilo se vygenerovat testovací data.');
+      }
+    } catch {
+      setError('Nepodařilo se vygenerovat testovací data.');
+    } finally {
+      setSeeding(false);
+    }
+  }
+
   // ---------- expand / collapse ----------
 
   function toggleExpand(id: number) {
@@ -136,7 +157,17 @@ export default function JournalEntryList() {
       {/* Header row */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">{cs.journal.title}</h1>
-        <Button onClick={() => navigate('new')}>+ Nový účetní zápis</Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSeedMockData}
+            disabled={seeding}
+          >
+            {seeding ? 'Generuji...' : 'Vygenerovat testovací data'}
+          </Button>
+          <Button onClick={() => navigate('new')}>+ Nový účetní zápis</Button>
+        </div>
       </div>
 
       {/* Error banner */}
