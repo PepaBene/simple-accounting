@@ -71,11 +71,11 @@ export default function TAccountEntry({
     setError(null);
 
     if (amount <= 0) {
-      setError('Castka musi byt vetsi nez 0.');
+      setError('Částka musí být větší než 0.');
       return;
     }
     if (!counterAccountId) {
-      setError('Vyberte protiucet.');
+      setError('Vyberte protiúčet.');
       return;
     }
     if (!date) {
@@ -114,10 +114,10 @@ export default function TAccountEntry({
       if (result.success) {
         onSave();
       } else {
-        setError('Nepodarilo se vytvorit zapis.');
+        setError('Nepodařilo se vytvořit zápis.');
       }
     } catch {
-      setError('Nepodarilo se vytvorit zapis.');
+      setError('Nepodařilo se vytvořit zápis.');
     } finally {
       setSaving(false);
     }
@@ -182,7 +182,7 @@ export default function TAccountEntry({
       {/* Counter-account picker */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium text-gray-700">
-          Protiucet
+          Protiúčet
         </label>
         <div className="relative">
           <button
@@ -204,7 +204,7 @@ export default function TAccountEntry({
             >
               {selectedCounterAccount
                 ? `${selectedCounterAccount.code} \u2013 ${selectedCounterAccount.name}`
-                : 'Vyberte protiucet...'}
+                : 'Vyberte protiúčet...'}
             </span>
             <svg
               className={`w-4 h-4 text-gray-400 transition-transform duration-150 ${
@@ -231,7 +231,7 @@ export default function TAccountEntry({
                   type="text"
                   value={counterQuery}
                   onChange={(e) => setCounterQuery(e.target.value)}
-                  placeholder="Hledat ucet..."
+                  placeholder="Hledat účet..."
                   autoFocus
                   className="w-full rounded border border-gray-300 px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                 />
@@ -241,7 +241,7 @@ export default function TAccountEntry({
               <ul className="max-h-44 overflow-y-auto py-1">
                 {filteredCounterAccounts.length === 0 ? (
                   <li className="px-3 py-2 text-sm text-gray-400 text-center">
-                    Zadne vysledky
+                    Žádné výsledky
                   </li>
                 ) : (
                   filteredCounterAccounts.map((acc) => (
@@ -300,7 +300,7 @@ export default function TAccountEntry({
         label={cs.journal.description}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        placeholder="Popis transakce (volitelne)"
+        placeholder="Popis transakce (volitelné)"
       />
 
       {/* Actions */}

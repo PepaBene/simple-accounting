@@ -19,9 +19,9 @@ interface AccountTypeGroup {
 const accountTypeGroups: AccountTypeGroup[] = [
   { type: 'asset', label: 'Aktiva' },
   { type: 'liability', label: 'Pasiva' },
-  { type: 'equity', label: 'Vlastni kapital' },
-  { type: 'revenue', label: 'Vynosy' },
-  { type: 'expense', label: 'Naklady' },
+  { type: 'equity', label: 'Vlastní kapitál' },
+  { type: 'revenue', label: 'Výnosy' },
+  { type: 'expense', label: 'Náklady' },
 ];
 
 // ── Per-account computed ledger data ─────────────────────────────────────────
@@ -79,16 +79,16 @@ export default function TAccountGrid() {
       if (accountsResult.success) {
         setAccounts(accountsResult.data as Account[]);
       } else {
-        setError('Nepodarilo se nacist ucty.');
+        setError('Nepodařilo se načíst účty.');
       }
 
       if (journalResult.success) {
         setJournalEntries(journalResult.data as JournalEntry[]);
       } else {
-        setError('Nepodarilo se nacist ucetni denik.');
+        setError('Nepodařilo se načíst účetní deník.');
       }
     } catch {
-      setError('Nepodarilo se nacist data.');
+      setError('Nepodařilo se načíst data.');
     } finally {
       setLoading(false);
     }
@@ -251,7 +251,7 @@ export default function TAccountGrid() {
       <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="w-full sm:max-w-sm">
           <Input
-            placeholder="Hledat podle kodu nebo nazvu..."
+            placeholder="Hledat podle kódu nebo názvu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -278,7 +278,7 @@ export default function TAccountGrid() {
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
             }`}
           >
-            Vsechny aktivni ucty
+            Všechny aktivní účty
           </button>
         </div>
       </div>
@@ -304,12 +304,12 @@ export default function TAccountGrid() {
           <p className="text-gray-500 text-sm mb-1">{cs.ledger.noTransactions}</p>
           <p className="text-gray-400 text-xs mb-4">
             {showAllAccounts
-              ? 'Zadny aktivni ucet neodpovida filtru.'
-              : 'Zatim nebyly zauctovany zadne transakce. Prejdete do ucetniho deniku nebo zobrazte vsechny ucty.'}
+              ? 'Žádný aktivní účet neodpovídá filtru.'
+              : 'Zatím nebyly zaúčtovány žádné transakce. Přejděte do účetního deníku nebo zobrazte všechny účty.'}
           </p>
           {!showAllAccounts && (
             <Button variant="secondary" onClick={() => setShowAllAccounts(true)}>
-              Zobrazit vsechny ucty
+              Zobrazit všechny účty
             </Button>
           )}
         </div>
@@ -327,10 +327,10 @@ export default function TAccountGrid() {
                 <span className="text-xs text-gray-400">
                   {group.items.length}{' '}
                   {group.items.length === 1
-                    ? 'ucet'
+                    ? 'účet'
                     : group.items.length >= 2 && group.items.length <= 4
-                      ? 'ucty'
-                      : 'uctu'}
+                      ? 'účty'
+                      : 'účtů'}
                 </span>
               </div>
 

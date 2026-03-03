@@ -132,7 +132,7 @@ function AccountPicker({ accounts, value, onChange, tabIndex }: AccountPickerPro
         <span className="truncate">
           {selectedAccount
             ? `${selectedAccount.code} \u2013 ${selectedAccount.name}`
-            : 'Vyberte ucet...'}
+            : 'Vyberte účet...'}
         </span>
         {selectedAccount && (
           <span
@@ -156,7 +156,7 @@ function AccountPicker({ accounts, value, onChange, tabIndex }: AccountPickerPro
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Hledat ucet..."
+              placeholder="Hledat účet..."
               className="w-full rounded border border-gray-200 px-2.5 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
             />
           </div>
@@ -165,7 +165,7 @@ function AccountPicker({ accounts, value, onChange, tabIndex }: AccountPickerPro
           <div className="overflow-y-auto flex-1">
             {filtered.length === 0 ? (
               <div className="px-3 py-4 text-sm text-gray-400 text-center">
-                Ucet nenalezen
+                Účet nenalezen
               </div>
             ) : (
               filtered.map((acc) => (
@@ -355,7 +355,9 @@ export default function JournalEntryForm() {
       }
 
       if (result.success) {
-        navigate('..', { relative: 'path' });
+        // Always navigate back to journal list (handles both /new and /:id/edit paths)
+        const basePath = `/workbook/${activeWorkbook.id}/journal`;
+        navigate(basePath, { replace: true });
       } else {
         setError('Nepodařilo se uložit účetní zápis.');
       }
@@ -580,7 +582,13 @@ export default function JournalEntryForm() {
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"
-            onClick={() => navigate('..', { relative: 'path' })}
+            onClick={() => {
+              if (activeWorkbook) {
+                navigate(`/workbook/${activeWorkbook.id}/journal`, { replace: true });
+              } else {
+                navigate('..', { relative: 'path' });
+              }
+            }}
           >
             {cs.journal.cancel}
           </Button>

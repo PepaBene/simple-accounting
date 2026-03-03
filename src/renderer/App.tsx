@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import AppShell from '@renderer/components/layout/AppShell';
 import WorkbookList from '@renderer/components/workbook/WorkbookList';
 import WorkbookSettings from '@renderer/components/workbook/WorkbookSettings';
@@ -19,6 +19,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<WorkbookList />} />
         <Route path="/workbook/:id" element={<AppShell />}>
+          <Route index element={<Navigate to="journal" replace />} />
           <Route path="accounts" element={<ChartOfAccounts />} />
           <Route path="journal" element={<JournalEntryList />} />
           <Route path="journal/new" element={<JournalEntryForm />} />

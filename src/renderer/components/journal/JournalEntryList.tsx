@@ -233,6 +233,16 @@ export default function JournalEntryList() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
+                          navigate(`${entry.id}/edit`);
+                        }}
+                      >
+                        {cs.common.edit}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           navigate(String(entry.id));
                         }}
                       >

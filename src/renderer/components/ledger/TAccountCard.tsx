@@ -130,7 +130,7 @@ export default function TAccountCard({
           <span className="font-mono text-sm font-bold text-gray-900 shrink-0">
             {account.code}
           </span>
-          <span className="text-[3px] text-gray-300 select-none">{'\u2014'}</span>
+          <span className="text-xs text-gray-300 select-none">&ndash;</span>
           <span className="text-sm text-gray-700 truncate">
             {account.name}
           </span>

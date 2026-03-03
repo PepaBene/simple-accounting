@@ -207,9 +207,6 @@ export default function BalanceSheet() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left column — AKTIVA */}
               <div className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b-2 border-gray-400 pb-1">
-                  Aktiva
-                </h2>
                 <SectionTable
                   title="Aktiva"
                   items={report.assets}
@@ -220,9 +217,6 @@ export default function BalanceSheet() {
 
               {/* Right column — PASIVA */}
               <div className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-800 border-b-2 border-gray-400 pb-1">
-                  Pasiva
-                </h2>
                 <SectionTable
                   title="Závazky"
                   items={report.liabilities}

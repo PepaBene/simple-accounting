@@ -23,8 +23,11 @@ function useBreadcrumb(): string | null {
 
   if (path.includes('/accounts')) return cs.nav.accounts;
   if (path.includes('/journal/new')) return cs.journal.newEntry;
+  if (path.match(/\/journal\/\d+\/edit/)) return `${cs.nav.journal} / ${cs.common.edit}`;
+  if (path.match(/\/journal\/\d+$/)) return `${cs.nav.journal} / Detail`;
   if (path.includes('/journal')) return cs.nav.journal;
   if (path.includes('/ledger')) return cs.nav.ledger;
+  if (path.includes('/settings')) return cs.nav.settings;
   if (path.includes('/reports/trial-balance')) return cs.nav.trialBalance;
   if (path.includes('/reports/balance-sheet')) return cs.nav.balanceSheet;
   if (path.includes('/reports/income-statement')) return cs.nav.incomeStatement;
