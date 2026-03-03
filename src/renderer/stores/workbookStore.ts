@@ -15,7 +15,9 @@ export const useWorkbookStore = create<WorkbookStore>((set) => ({
   setActiveWorkbook: (workbook) => set({ activeWorkbook: workbook }),
   setWorkbooks: (workbooks) => set({ workbooks }),
   loadWorkbooks: async () => {
-    const workbooks = await window.api.workbooks.getAll();
-    set({ workbooks });
+    const result = await window.api.workbooks.getAll();
+    if (result.success) {
+      set({ workbooks: result.data });
+    }
   },
 }));

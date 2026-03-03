@@ -22,9 +22,9 @@ export default function AppShell() {
 
     async function loadWorkbook() {
       try {
-        const workbook = await window.api.workbooks.getById(workbookId);
-        if (!cancelled) {
-          setActiveWorkbook(workbook);
+        const result = await window.api.workbooks.getById(workbookId);
+        if (!cancelled && result.success) {
+          setActiveWorkbook(result.data);
         }
       } catch (err) {
         console.error('Failed to load workbook:', err);
