@@ -94,6 +94,8 @@ const api = {
       ipcRenderer.invoke('reports:exportPdf', workbookId, reportType),
     importCsv: (workbookId: number) =>
       ipcRenderer.invoke('reports:importCsv', workbookId),
+    seedDemoData: (workbookId: number) =>
+      ipcRenderer.invoke('reports:seedDemoData', workbookId),
   },
 };
 

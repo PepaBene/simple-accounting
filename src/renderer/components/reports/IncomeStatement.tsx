@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IncomeStatementReport, IncomeStatementItem } from '@renderer/types/reports';
+import { IncomeStatementReport, IncomeStatementSection } from '@renderer/types/reports';
 import { useWorkbookStore } from '@renderer/stores/workbookStore';
 import ReportExport from '@renderer/components/reports/ReportExport';
 
@@ -22,70 +22,84 @@ function formatDateCZ(date: Date): string {
 
 // -- sub-components -----------------------------------------------------------
 
-function SectionTable({
-  title,
-  items,
-  subtotalLabel,
-  subtotal,
+function SectionBlock({
+  section,
+  colorClass,
 }: {
-  title: string;
-  items: IncomeStatementItem[];
-  subtotalLabel: string;
-  subtotal: number;
+  section: IncomeStatementSection;
+  colorClass: string;
 }) {
+  if (section.items.length === 0) return null;
+
   return (
-    <div>
-      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5 px-1">
-        {title}
-      </h3>
-      <div className="overflow-x-auto border border-gray-300 rounded">
+    <div className="mb-3">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1 px-1">
+        {section.label}
+      </h4>
+      <div className="border border-gray-200 rounded overflow-hidden">
         <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-100 border-b-2 border-gray-300">
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200 w-20">
-                Účet
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                Název
-              </th>
-              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-600 w-36">
-                Částka
-              </th>
-            </tr>
-          </thead>
           <tbody>
-            {items.map((item, i) => (
+            {section.items.map((item, i) => (
               <tr
                 key={item.code}
-                className={`border-b border-gray-200 hover:bg-blue-50 ${
-                  i % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                className={`border-b border-gray-100 hover:bg-blue-50/50 ${
+                  i % 2 === 1 ? 'bg-gray-50/50' : ''
                 }`}
               >
-                <td className="px-3 py-1.5 font-mono text-xs font-medium text-gray-900 border-r border-gray-200 whitespace-nowrap">
+                <td className="px-3 py-1.5 font-mono text-xs font-medium text-gray-700 w-20">
                   {item.code}
                 </td>
-                <td className="px-3 py-1.5 text-gray-800 border-r border-gray-200">
-                  {item.name}
-                </td>
-                <td className="px-3 py-1.5 text-right font-mono text-xs text-gray-800 whitespace-nowrap">
-                  {formatCZK(item.amount)}
+                <td className="px-3 py-1.5 text-gray-800">{item.name}</td>
+                <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-gray-800 whitespace-nowrap w-32">
+                  {formatCZK(item.balance)}
                 </td>
               </tr>
             ))}
-            <tr className="bg-gray-100 border-t-2 border-gray-400 font-bold">
-              <td
-                className="px-3 py-2 text-xs text-gray-900 border-r border-gray-200"
-                colSpan={2}
-              >
-                {subtotalLabel}
+            <tr className={`border-t border-gray-300 font-semibold ${colorClass}`}>
+              <td colSpan={2} className="px-3 py-1.5 text-xs text-gray-700">
+                {section.label} celkem
               </td>
-              <td className="px-3 py-2 text-right font-mono text-xs text-gray-900 whitespace-nowrap">
-                {formatCZK(subtotal)}
+              <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-gray-900 whitespace-nowrap w-32">
+                {formatCZK(section.subtotal)}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function ResultRow({
+  label,
+  value,
+  isHighlighted,
+}: {
+  label: string;
+  value: number;
+  isHighlighted?: boolean;
+}) {
+  const borderClass = isHighlighted ? 'border-2 border-gray-400' : 'border border-gray-300';
+  const bgClass = isHighlighted ? 'bg-gray-100' : 'bg-gray-50';
+
+  return (
+    <div className={`${borderClass} rounded overflow-hidden mb-2`}>
+      <table className="w-full text-sm border-collapse">
+        <tbody>
+          <tr className={`${bgClass} font-bold`}>
+            <td className="px-3 py-2 text-xs text-gray-900">
+              {label}
+            </td>
+            <td
+              className={`px-3 py-2 text-right font-mono text-xs tabular-nums whitespace-nowrap w-32 ${
+                value >= 0 ? 'text-green-700' : 'text-red-700'
+              }`}
+            >
+              {formatCZK(value)} Kč
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -109,9 +123,7 @@ export default function IncomeStatement() {
     setLoading(true);
     setError(null);
     try {
-      const result = await window.api.reports.incomeStatement(
-        activeWorkbook.id,
-      );
+      const result = await window.api.reports.incomeStatement(activeWorkbook.id);
       if (result.success) {
         setReport(result.data);
       } else {
@@ -126,10 +138,10 @@ export default function IncomeStatement() {
 
   const isEmpty =
     report &&
-    report.revenue.length === 0 &&
-    report.expenses.length === 0;
-
-  // -- loading state ----------------------------------------------------------
+    report.operatingRevenue.items.length === 0 &&
+    report.operatingExpenses.items.length === 0 &&
+    report.financialRevenue.items.length === 0 &&
+    report.financialExpenses.items.length === 0;
 
   if (loading) {
     return (
@@ -138,8 +150,6 @@ export default function IncomeStatement() {
       </div>
     );
   }
-
-  // -- render -----------------------------------------------------------------
 
   return (
     <div className="p-6 space-y-4">
@@ -196,50 +206,44 @@ export default function IncomeStatement() {
           </div>
           <p className="text-sm text-gray-500 mb-1">Žádná data k zobrazení.</p>
           <p className="text-xs text-gray-400">
-            Zaúčtujte transakce v účetním deníku pro vygenerování výkazu zisku a
-            ztráty.
+            Zaúčtujte transakce v účetním deníku pro vygenerování výkazu zisku a ztráty.
           </p>
         </div>
       ) : (
         report && (
           <>
-            {/* Revenue section */}
-            <SectionTable
-              title="Výnosy"
-              items={report.revenue}
-              subtotalLabel="Výnosy celkem"
-              subtotal={report.totalRevenue}
-            />
-
-            {/* Expenses section */}
-            <SectionTable
-              title="Náklady"
-              items={report.expenses}
-              subtotalLabel="Náklady celkem"
-              subtotal={report.totalExpenses}
-            />
-
-            {/* Net Income */}
-            <div className="overflow-x-auto border-2 border-gray-400 rounded">
-              <table className="w-full text-sm border-collapse">
-                <tbody>
-                  <tr className="bg-gray-100 font-bold">
-                    <td className="px-3 py-2.5 text-sm text-gray-900">
-                      Výsledek hospodaření
-                    </td>
-                    <td
-                      className={`px-3 py-2.5 text-right font-mono text-sm whitespace-nowrap w-36 ${
-                        report.netIncome >= 0
-                          ? 'text-green-700'
-                          : 'text-red-700'
-                      }`}
-                    >
-                      {formatCZK(report.netIncome)} Kč
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* I. Provozní výsledek hospodaření */}
+            <div>
+              <h2 className="text-sm font-bold text-gray-900 mb-3 px-1 pb-2 border-b-2 border-emerald-500">
+                I. Provozní výsledek hospodaření
+              </h2>
+              <SectionBlock section={report.operatingRevenue} colorClass="bg-emerald-50" />
+              <SectionBlock section={report.operatingExpenses} colorClass="bg-red-50" />
+              <ResultRow
+                label="Provozní výsledek hospodaření"
+                value={report.operatingIncome}
+              />
             </div>
+
+            {/* II. Finanční výsledek hospodaření */}
+            <div>
+              <h2 className="text-sm font-bold text-gray-900 mb-3 px-1 pb-2 border-b-2 border-blue-500">
+                II. Finanční výsledek hospodaření
+              </h2>
+              <SectionBlock section={report.financialRevenue} colorClass="bg-blue-50" />
+              <SectionBlock section={report.financialExpenses} colorClass="bg-red-50" />
+              <ResultRow
+                label="Finanční výsledek hospodaření"
+                value={report.financialIncome}
+              />
+            </div>
+
+            {/* III. Výsledek hospodaření za účetní období */}
+            <ResultRow
+              label="Výsledek hospodaření za účetní období"
+              value={report.netIncome}
+              isHighlighted
+            />
 
             {/* Profit / Loss label */}
             <div className="flex items-center gap-2 text-sm">

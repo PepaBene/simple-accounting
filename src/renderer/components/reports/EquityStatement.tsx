@@ -39,9 +39,7 @@ export default function EquityStatement() {
     setLoading(true);
     setError(null);
     try {
-      const result = await window.api.reports.equityStatement(
-        activeWorkbook.id,
-      );
+      const result = await window.api.reports.equityStatement(activeWorkbook.id);
       if (result.success) {
         setReport(result.data);
       } else {
@@ -60,30 +58,28 @@ export default function EquityStatement() {
     if (!report) {
       return {
         totalOpening: 0,
-        totalIncreases: 0,
-        totalDecreases: 0,
+        totalContributions: 0,
+        totalWithdrawals: 0,
         totalClosing: 0,
       };
     }
-    return report.items.reduce(
+    return report.accounts.reduce(
       (acc, item) => ({
-        totalOpening: acc.totalOpening + item.openingBalance,
-        totalIncreases: acc.totalIncreases + item.increases,
-        totalDecreases: acc.totalDecreases + item.decreases,
-        totalClosing: acc.totalClosing + item.closingBalance,
+        totalOpening: acc.totalOpening + item.opening_balance,
+        totalContributions: acc.totalContributions + item.contributions,
+        totalWithdrawals: acc.totalWithdrawals + item.withdrawals,
+        totalClosing: acc.totalClosing + item.closing_balance,
       }),
       {
         totalOpening: 0,
-        totalIncreases: 0,
-        totalDecreases: 0,
+        totalContributions: 0,
+        totalWithdrawals: 0,
         totalClosing: 0,
       },
     );
   }, [report]);
 
-  const isEmpty = report && report.items.length === 0;
-
-  // -- loading state ----------------------------------------------------------
+  const isEmpty = report && report.accounts.length === 0;
 
   if (loading) {
     return (
@@ -92,8 +88,6 @@ export default function EquityStatement() {
       </div>
     );
   }
-
-  // -- render -----------------------------------------------------------------
 
   return (
     <div className="p-6 space-y-4">
@@ -158,7 +152,6 @@ export default function EquityStatement() {
         report && (
           <div className="overflow-x-auto border border-gray-300 rounded">
             <table className="w-full text-sm border-collapse">
-              {/* Column headers */}
               <thead>
                 <tr className="bg-gray-100 border-b-2 border-gray-300">
                   <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200 w-20">
@@ -182,9 +175,8 @@ export default function EquityStatement() {
                 </tr>
               </thead>
 
-              {/* Data rows */}
               <tbody>
-                {report.items.map((item, i) => (
+                {report.accounts.map((item, i) => (
                   <tr
                     key={item.code}
                     className={`border-b border-gray-200 hover:bg-blue-50 ${
@@ -198,22 +190,22 @@ export default function EquityStatement() {
                       {item.name}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs text-gray-800 border-r border-gray-200 whitespace-nowrap">
-                      {formatCZK(item.openingBalance)}
+                      {formatCZK(item.opening_balance)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs text-green-700 border-r border-gray-200 whitespace-nowrap">
-                      {formatCZK(item.increases)}
+                      {formatCZK(item.contributions)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs text-red-700 border-r border-gray-200 whitespace-nowrap">
-                      {formatCZK(item.decreases)}
+                      {formatCZK(item.withdrawals)}
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-xs text-gray-800 whitespace-nowrap">
-                      {formatCZK(item.closingBalance)}
+                      {formatCZK(item.closing_balance)}
                     </td>
                   </tr>
                 ))}
 
                 {/* Totals row */}
-                {report.items.length > 0 && (
+                {report.accounts.length > 0 && (
                   <tr className="bg-gray-100 border-t-2 border-gray-400 font-bold">
                     <td
                       className="px-3 py-2 text-xs text-gray-900 border-r border-gray-200"
@@ -225,10 +217,10 @@ export default function EquityStatement() {
                       {formatCZK(totals.totalOpening)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-green-700 border-r border-gray-200 whitespace-nowrap">
-                      {formatCZK(totals.totalIncreases)}
+                      {formatCZK(totals.totalContributions)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-red-700 border-r border-gray-200 whitespace-nowrap">
-                      {formatCZK(totals.totalDecreases)}
+                      {formatCZK(totals.totalWithdrawals)}
                     </td>
                     <td className="px-3 py-2 text-right font-mono text-xs text-gray-900 whitespace-nowrap">
                       {formatCZK(totals.totalClosing)}
@@ -242,7 +234,7 @@ export default function EquityStatement() {
       )}
 
       {/* Summary */}
-      {report && report.items.length > 0 && (
+      {report && report.accounts.length > 0 && (
         <div className="flex items-center gap-4 text-sm">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
             Počáteční stav celkem: {formatCZK(totals.totalOpening)} Kč

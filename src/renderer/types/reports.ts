@@ -11,32 +11,48 @@ export interface TrialBalanceRow {
   closing_credit: number;
 }
 
-export interface BalanceSheetReport {
-  assets: BalanceSheetItem[];
-  liabilities: BalanceSheetItem[];
-  equity: BalanceSheetItem[];
-  totalAssets: number;
-  totalLiabilitiesAndEquity: number;
-}
-
 export interface BalanceSheetItem {
   code: string;
   name: string;
-  amount: number;
+  balance: number;
 }
 
-export interface IncomeStatementReport {
-  revenue: IncomeStatementItem[];
-  expenses: IncomeStatementItem[];
-  totalRevenue: number;
-  totalExpenses: number;
-  netIncome: number;
+export interface BalanceSheetSection {
+  label: string;
+  items: BalanceSheetItem[];
+  subtotal: number;
+}
+
+export interface BalanceSheetReport {
+  longTermAssets: BalanceSheetSection;
+  currentAssets: BalanceSheetSection;
+  totalAssets: number;
+  equity: BalanceSheetSection;
+  longTermLiabilities: BalanceSheetSection;
+  currentLiabilities: BalanceSheetSection;
+  totalLiabilitiesAndEquity: number;
 }
 
 export interface IncomeStatementItem {
   code: string;
   name: string;
-  amount: number;
+  balance: number;
+}
+
+export interface IncomeStatementSection {
+  label: string;
+  items: IncomeStatementItem[];
+  subtotal: number;
+}
+
+export interface IncomeStatementReport {
+  operatingRevenue: IncomeStatementSection;
+  operatingExpenses: IncomeStatementSection;
+  operatingIncome: number;
+  financialRevenue: IncomeStatementSection;
+  financialExpenses: IncomeStatementSection;
+  financialIncome: number;
+  netIncome: number;
 }
 
 export interface CashFlowReport {
@@ -46,7 +62,7 @@ export interface CashFlowReport {
   totalOperating: number;
   totalInvesting: number;
   totalFinancing: number;
-  netChange: number;
+  netCashChange: number;
 }
 
 export interface CashFlowItem {
@@ -55,16 +71,17 @@ export interface CashFlowItem {
 }
 
 export interface EquityStatementReport {
-  items: EquityStatementItem[];
-  totalOpening: number;
-  totalClosing: number;
+  accounts: EquityStatementItem[];
+  totalOpeningEquity: number;
+  totalClosingEquity: number;
+  totalChange: number;
 }
 
 export interface EquityStatementItem {
   code: string;
   name: string;
-  openingBalance: number;
-  increases: number;
-  decreases: number;
-  closingBalance: number;
+  opening_balance: number;
+  contributions: number;
+  withdrawals: number;
+  closing_balance: number;
 }

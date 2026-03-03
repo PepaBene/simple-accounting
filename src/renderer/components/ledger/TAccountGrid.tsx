@@ -335,7 +335,7 @@ export default function TAccountGrid() {
               </div>
 
               {/* Responsive grid: 1 col on small, 2 on medium, 3 on large */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {group.items.map((ledgerData) => (
                   <TAccountCard
                     key={ledgerData.account.id}

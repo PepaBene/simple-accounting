@@ -123,7 +123,7 @@ export default function TAccountCard({
   const maxRows = Math.max(debitEntries.length, creditEntries.length);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden flex flex-col min-w-0">
       {/* ── Header: account code + name + type badge ─── the top bar of the T */}
       <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -136,7 +136,7 @@ export default function TAccountCard({
           </span>
         </div>
         <span
-          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium border shrink-0 ${badge.className}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border shrink-0 ${badge.className}`}
         >
           {badge.label}
         </span>
@@ -158,7 +158,7 @@ export default function TAccountCard({
               {onDirectEntry && (
                 <button
                   onClick={() => onDirectEntry(account.id, 'debit')}
-                  className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                   title={cs.ledger.enterDirectly}
                 >
                   + {cs.common.add}
@@ -182,12 +182,12 @@ export default function TAccountCard({
                       onClick={() => onEntryClick?.(entry.journal_entry_id)}
                       className="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-blue-50/40 transition-colors group"
                     >
-                      <span className="text-[11px] text-gray-400 group-hover:text-gray-600 truncate mr-2">
+                      <span className="text-xs text-gray-400 group-hover:text-gray-600 truncate mr-2">
                         <span className="font-mono">{formatDateCZ(entry.date)}</span>
                         {' '}
-                        {truncate(entry.description, 20)}
+                        {truncate(entry.description, 35)}
                       </span>
-                      <span className="text-xs font-medium tabular-nums text-gray-800 shrink-0">
+                      <span className="text-sm font-medium tabular-nums text-gray-800 shrink-0">
                         {formatAmount(entry.debit_amount)}
                       </span>
                     </button>
@@ -204,10 +204,10 @@ export default function TAccountCard({
           {/* Debit totals */}
           <div className="border-t-2 border-gray-400 px-3 py-1.5 bg-gray-50/80">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium text-gray-500 uppercase">
+              <span className="text-xs font-medium text-gray-500 uppercase">
                 Obrat
               </span>
-              <span className="text-xs font-bold tabular-nums text-gray-900">
+              <span className="text-sm font-bold tabular-nums text-gray-900">
                 {formatAmount(totalDebits)}
               </span>
             </div>
@@ -224,14 +224,14 @@ export default function TAccountCard({
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-[10px] font-semibold uppercase ${
+                  className={`text-xs font-semibold uppercase ${
                     isReversedBalance ? 'text-amber-700' : 'text-blue-700'
                   }`}
                 >
                   {cs.ledger.balance}
                 </span>
                 <span
-                  className={`text-xs font-bold tabular-nums ${
+                  className={`text-sm font-bold tabular-nums ${
                     isReversedBalance ? 'text-amber-800' : 'text-blue-800'
                   }`}
                 >
@@ -253,7 +253,7 @@ export default function TAccountCard({
               {onDirectEntry && (
                 <button
                   onClick={() => onDirectEntry(account.id, 'credit')}
-                  className="text-[10px] text-blue-600 hover:text-blue-800 hover:underline"
+                  className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
                   title={cs.ledger.enterDirectly}
                 >
                   + {cs.common.add}
@@ -277,12 +277,12 @@ export default function TAccountCard({
                       onClick={() => onEntryClick?.(entry.journal_entry_id)}
                       className="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-green-50/40 transition-colors group"
                     >
-                      <span className="text-[11px] text-gray-400 group-hover:text-gray-600 truncate mr-2">
+                      <span className="text-xs text-gray-400 group-hover:text-gray-600 truncate mr-2">
                         <span className="font-mono">{formatDateCZ(entry.date)}</span>
                         {' '}
-                        {truncate(entry.description, 20)}
+                        {truncate(entry.description, 35)}
                       </span>
-                      <span className="text-xs font-medium tabular-nums text-gray-800 shrink-0">
+                      <span className="text-sm font-medium tabular-nums text-gray-800 shrink-0">
                         {formatAmount(entry.credit_amount)}
                       </span>
                     </button>
@@ -299,10 +299,10 @@ export default function TAccountCard({
           {/* Credit totals */}
           <div className="border-t-2 border-gray-400 px-3 py-1.5 bg-gray-50/80">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium text-gray-500 uppercase">
+              <span className="text-xs font-medium text-gray-500 uppercase">
                 Obrat
               </span>
-              <span className="text-xs font-bold tabular-nums text-gray-900">
+              <span className="text-sm font-bold tabular-nums text-gray-900">
                 {formatAmount(totalCredits)}
               </span>
             </div>
@@ -319,14 +319,14 @@ export default function TAccountCard({
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-[10px] font-semibold uppercase ${
+                  className={`text-xs font-semibold uppercase ${
                     isReversedBalance ? 'text-amber-700' : 'text-green-700'
                   }`}
                 >
                   {cs.ledger.balance}
                 </span>
                 <span
-                  className={`text-xs font-bold tabular-nums ${
+                  className={`text-sm font-bold tabular-nums ${
                     isReversedBalance ? 'text-amber-800' : 'text-green-800'
                   }`}
                 >
@@ -341,7 +341,7 @@ export default function TAccountCard({
       {/* ── Zero-balance indicator (when balance is exactly 0 and there are entries) */}
       {balance === 0 && entries.length > 0 && (
         <div className="px-3 py-1 border-t border-gray-200 bg-gray-50/60 text-center">
-          <span className="text-[10px] font-semibold text-gray-500 uppercase">
+          <span className="text-xs font-semibold text-gray-500 uppercase">
             {cs.ledger.balance}: 0,00
           </span>
         </div>

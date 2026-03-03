@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BalanceSheetReport, BalanceSheetItem } from '@renderer/types/reports';
+import { BalanceSheetReport, BalanceSheetSection } from '@renderer/types/reports';
 import { useWorkbookStore } from '@renderer/stores/workbookStore';
 import ReportExport from '@renderer/components/reports/ReportExport';
 
@@ -22,65 +22,43 @@ function formatDateCZ(date: Date): string {
 
 // -- sub-components -----------------------------------------------------------
 
-function SectionTable({
-  title,
-  items,
-  subtotalLabel,
-  subtotal,
+function SectionBlock({
+  section,
 }: {
-  title: string;
-  items: BalanceSheetItem[];
-  subtotalLabel: string;
-  subtotal: number;
+  section: BalanceSheetSection;
 }) {
+  if (section.items.length === 0) return null;
+
   return (
-    <div>
-      <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-1.5 px-1">
-        {title}
-      </h3>
-      <div className="overflow-x-auto border border-gray-300 rounded">
+    <div className="mb-3">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-1 px-1">
+        {section.label}
+      </h4>
+      <div className="border border-gray-200 rounded overflow-hidden">
         <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-100 border-b-2 border-gray-300">
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200 w-20">
-                Účet
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 border-r border-gray-200">
-                Název
-              </th>
-              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wider text-gray-600 w-36">
-                Částka
-              </th>
-            </tr>
-          </thead>
           <tbody>
-            {items.map((item, i) => (
+            {section.items.map((item, i) => (
               <tr
                 key={item.code}
-                className={`border-b border-gray-200 hover:bg-blue-50 ${
-                  i % 2 === 1 ? 'bg-gray-50' : 'bg-white'
+                className={`border-b border-gray-100 hover:bg-blue-50/50 ${
+                  i % 2 === 1 ? 'bg-gray-50/50' : ''
                 }`}
               >
-                <td className="px-3 py-1.5 font-mono text-xs font-medium text-gray-900 border-r border-gray-200 whitespace-nowrap">
+                <td className="px-3 py-1.5 font-mono text-xs font-medium text-gray-700 w-20">
                   {item.code}
                 </td>
-                <td className="px-3 py-1.5 text-gray-800 border-r border-gray-200">
-                  {item.name}
-                </td>
-                <td className="px-3 py-1.5 text-right font-mono text-xs text-gray-800 whitespace-nowrap">
-                  {formatCZK(item.amount)}
+                <td className="px-3 py-1.5 text-gray-800">{item.name}</td>
+                <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-gray-800 whitespace-nowrap w-32">
+                  {formatCZK(item.balance)}
                 </td>
               </tr>
             ))}
-            <tr className="bg-gray-100 border-t-2 border-gray-400 font-bold">
-              <td
-                className="px-3 py-2 text-xs text-gray-900 border-r border-gray-200"
-                colSpan={2}
-              >
-                {subtotalLabel}
+            <tr className="bg-gray-100 border-t border-gray-300 font-semibold">
+              <td colSpan={2} className="px-3 py-1.5 text-xs text-gray-700">
+                {section.label} celkem
               </td>
-              <td className="px-3 py-2 text-right font-mono text-xs text-gray-900 whitespace-nowrap">
-                {formatCZK(subtotal)}
+              <td className="px-3 py-1.5 text-right font-mono text-xs tabular-nums text-gray-900 whitespace-nowrap w-32">
+                {formatCZK(section.subtotal)}
               </td>
             </tr>
           </tbody>
@@ -124,15 +102,15 @@ export default function BalanceSheet() {
 
   const isEmpty =
     report &&
-    report.assets.length === 0 &&
-    report.liabilities.length === 0 &&
-    report.equity.length === 0;
+    report.longTermAssets.items.length === 0 &&
+    report.currentAssets.items.length === 0 &&
+    report.equity.items.length === 0 &&
+    report.longTermLiabilities.items.length === 0 &&
+    report.currentLiabilities.items.length === 0;
 
   const isBalanced =
     report != null &&
     Math.abs(report.totalAssets - report.totalLiabilitiesAndEquity) < 0.005;
-
-  // -- loading state ----------------------------------------------------------
 
   if (loading) {
     return (
@@ -141,8 +119,6 @@ export default function BalanceSheet() {
       </div>
     );
   }
-
-  // -- render -----------------------------------------------------------------
 
   return (
     <div className="p-6 space-y-4">
@@ -206,45 +182,46 @@ export default function BalanceSheet() {
             {/* Two-column layout: AKTIVA | PASIVA */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left column — AKTIVA */}
-              <div className="space-y-4">
-                <SectionTable
-                  title="Aktiva"
-                  items={report.assets}
-                  subtotalLabel="Aktiva celkem"
-                  subtotal={report.totalAssets}
-                />
+              <div>
+                <h2 className="text-sm font-bold text-gray-900 mb-3 px-1 pb-2 border-b-2 border-blue-500">
+                  AKTIVA
+                </h2>
+                <SectionBlock section={report.longTermAssets} />
+                <SectionBlock section={report.currentAssets} />
+
+                <div className="border-2 border-blue-400 rounded overflow-hidden">
+                  <table className="w-full text-sm border-collapse">
+                    <tbody>
+                      <tr className="bg-blue-50 font-bold">
+                        <td className="px-3 py-2 text-xs text-blue-900">
+                          AKTIVA CELKEM
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-blue-900 whitespace-nowrap w-32">
+                          {formatCZK(report.totalAssets)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Right column — PASIVA */}
-              <div className="space-y-4">
-                <SectionTable
-                  title="Závazky"
-                  items={report.liabilities}
-                  subtotalLabel="Závazky celkem"
-                  subtotal={report.liabilities.reduce(
-                    (sum, item) => sum + item.amount,
-                    0,
-                  )}
-                />
-                <SectionTable
-                  title="Vlastní kapitál"
-                  items={report.equity}
-                  subtotalLabel="Vlastní kapitál celkem"
-                  subtotal={report.equity.reduce(
-                    (sum, item) => sum + item.amount,
-                    0,
-                  )}
-                />
+              <div>
+                <h2 className="text-sm font-bold text-gray-900 mb-3 px-1 pb-2 border-b-2 border-purple-500">
+                  PASIVA
+                </h2>
+                <SectionBlock section={report.equity} />
+                <SectionBlock section={report.longTermLiabilities} />
+                <SectionBlock section={report.currentLiabilities} />
 
-                {/* Pasiva grand total */}
-                <div className="overflow-x-auto border-2 border-gray-400 rounded">
+                <div className="border-2 border-purple-400 rounded overflow-hidden">
                   <table className="w-full text-sm border-collapse">
                     <tbody>
-                      <tr className="bg-gray-100 font-bold">
-                        <td className="px-3 py-2 text-xs text-gray-900">
-                          Pasiva celkem
+                      <tr className="bg-purple-50 font-bold">
+                        <td className="px-3 py-2 text-xs text-purple-900">
+                          PASIVA CELKEM
                         </td>
-                        <td className="px-3 py-2 text-right font-mono text-xs text-gray-900 whitespace-nowrap w-36">
+                        <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-purple-900 whitespace-nowrap w-32">
                           {formatCZK(report.totalLiabilitiesAndEquity)}
                         </td>
                       </tr>

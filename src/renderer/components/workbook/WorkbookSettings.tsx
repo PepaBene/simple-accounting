@@ -55,6 +55,9 @@ export default function WorkbookSettings() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Seed demo data
+  const [seeding, setSeeding] = useState(false);
+
   const workbookId = Number(id);
 
   useEffect(() => {
@@ -126,6 +129,24 @@ export default function WorkbookSettings() {
     } finally {
       setDeleting(false);
       setDeleteOpen(false);
+    }
+  }
+
+  async function handleSeedDemoData() {
+    setSeeding(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await window.api.reports.seedDemoData(workbookId);
+      if (result.success) {
+        setSuccess(`Ukázková data byla úspěšně vytvořena (${result.data.count} zápisů).`);
+      } else {
+        setError(result.error ?? 'Nepodařilo se vytvořit ukázková data.');
+      }
+    } catch {
+      setError('Nepodařilo se vytvořit ukázková data.');
+    } finally {
+      setSeeding(false);
     }
   }
 
@@ -228,6 +249,26 @@ export default function WorkbookSettings() {
               <p className="text-xs text-gray-500 mb-0.5">Poslední úprava</p>
               <p className="text-sm text-gray-800">{formatDateTime(workbook.updated_at)}</p>
             </div>
+          </div>
+        </div>
+
+        {/* Seed demo data */}
+        <div className="px-5 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-700">Ukázková data</p>
+              <p className="text-xs text-gray-400">
+                Vytvořte vzorové účetní zápisy pro testování a výuku.
+              </p>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSeedDemoData}
+              disabled={seeding}
+            >
+              {seeding ? cs.common.loading : 'Vytvořit ukázková data'}
+            </Button>
           </div>
         </div>
 
